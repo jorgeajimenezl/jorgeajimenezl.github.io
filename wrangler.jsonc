@@ -20,7 +20,8 @@
 		{
 			"binding": "DB",
 			"database_name": "jorgeajimenezl-blog-d1",
-			"database_id": "dfdedd26-8b83-41d7-a113-ca46764facba"
+			"database_id": "dfdedd26-8b83-41d7-a113-ca46764facba",
+			"migrations_dir": "worker/migrations"
 		}
 	],
 	"vars": {
