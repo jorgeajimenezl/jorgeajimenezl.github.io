@@ -71,3 +71,12 @@ html #back-to-top {
 html.scrolled #back-to-top {
   @apply opacity-100 pointer-events-auto;
 }
+
+.panel-preview h1,
+.panel-preview h2,
+.panel-preview h3,
+.panel-preview h4,
+.panel-preview h5,
+.panel-preview h6 {
+  @apply text-base;
+}
