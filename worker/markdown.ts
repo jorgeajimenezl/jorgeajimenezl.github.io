@@ -20,7 +20,8 @@ export async function mdToSafeHtml(md: string): Promise<string> {
     .use(remarkGfm)
     .use(remarkBreaks)
     .use(remarkRehype, { allowDangerousHtml: false })
-    .use(rehypeSanitize, sanitizeSchema)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .use(rehypeSanitize, sanitizeSchema as any)
     .use(rehypeExternalLinks, {
       target: "_blank",
       rel: ["nofollow", "ugc", "noopener", "noreferrer"]

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /** @jsxImportSource preact */
 import { useEffect, useState } from "preact/hooks";
 import Comment from "@components/Comment";
@@ -86,7 +87,7 @@ export default function CommentsList({ postSlug }: Props) {
         ) : (
           <ul class="space-y-6">
             {comments.map((c) => (
-              <Comment id={c.id} author={c.author} createdAtSeconds={c.created_at} html={c.html} />
+              <Comment id={c.id} author={c.author} createdAt={c.created_at} html={c.html} />
             ))}
           </ul>
         )}
