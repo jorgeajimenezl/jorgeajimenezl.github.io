@@ -23,24 +23,29 @@ function apiUrl(path: string) {
 export default function CommentsList({ postSlug }: Props) {
   const [comments, setComments] = useState<CommentFromApi[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  async function fetchAll(): Promise<CommentFromApi[]> {
+    const limit = 50;
+    let page = 1;
+    const all: CommentFromApi[] = [];
+    for (;;) {
+      const url = apiUrl(`/comments?slug=${encodeURIComponent(postSlug)}&page=${page}&limit=${limit}`);
+      const res = await fetch(url, { headers: { "Accept": "application/json" } });
+      if (!res.ok) throw new Error(`Failed to load comments (${res.status})`);
+      const data = (await res.json()) as { comments?: CommentFromApi[] };
+      const batch = Array.isArray(data.comments) ? data.comments : [];
+      all.push(...batch);
+      if (batch.length < limit) break;
+      page += 1;
+    }
+    return all;
+  }
 
   useEffect(() => {
     let cancelled = false;
     async function loadAll() {
       try {
-        const limit = 50;
-        let page = 1;
-        const all: CommentFromApi[] = [];
-        for (;;) {
-          const url = apiUrl(`/comments?slug=${encodeURIComponent(postSlug)}&page=${page}&limit=${limit}`);
-          const res = await fetch(url, { headers: { "Accept": "application/json" } });
-          if (!res.ok) throw new Error(`Failed to load comments (${res.status})`);
-          const data = (await res.json()) as { comments?: CommentFromApi[] };
-          const batch = Array.isArray(data.comments) ? data.comments : [];
-          all.push(...batch);
-          if (batch.length < limit) break;
-          page += 1;
-        }
+        const all = await fetchAll();
         if (!cancelled) setComments(all);
       } catch (e) {
         if (!cancelled) setError((e as Error).message || "Failed to load comments");
@@ -50,6 +55,18 @@ export default function CommentsList({ postSlug }: Props) {
     return () => {
       cancelled = true;
     };
+  }, [postSlug]);
+
+  useEffect(() => {
+    function onCreated(e: Event) {
+      const detail = (e as CustomEvent).detail as any;
+      if (!detail || detail.slug !== postSlug) return;
+      fetchAll()
+        .then((all) => setComments(all))
+        .catch((err) => setError((err as Error).message || "Failed to load comments"));
+    }
+    window.addEventListener("comments:created", onCreated as any);
+    return () => window.removeEventListener("comments:created", onCreated as any);
   }, [postSlug]);
 
   return (
@@ -69,12 +86,7 @@ export default function CommentsList({ postSlug }: Props) {
         ) : (
           <ul class="space-y-6">
             {comments.map((c) => (
-              <Comment
-                id={c.id}
-                author={c.author}
-                createdAt={c.created_at}
-                html={c.html}
-              />
+              <Comment id={c.id} author={c.author} createdAtSeconds={c.created_at} html={c.html} />
             ))}
           </ul>
         )}
