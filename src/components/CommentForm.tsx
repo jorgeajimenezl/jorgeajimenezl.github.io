@@ -180,7 +180,9 @@ export default function CommentForm(props: Props) {
       // Keep author populated for convenience
       try {
         window.dispatchEvent(new CustomEvent("comments:created", { detail: { slug } }));
-      } catch {}
+      } catch {
+        // ignore
+      }
     } catch (err) {
       setError((err as Error).message || "Failed to post comment");
     } finally {
