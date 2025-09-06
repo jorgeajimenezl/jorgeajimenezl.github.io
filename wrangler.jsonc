@@ -9,6 +9,22 @@
 	"compatibility_date": "2025-09-05",
 	"observability": {
 		"enabled": true
+	},
+	"kv_namespaces": [
+		{
+			"binding": "KV",
+			"id": "d511dae1c6814bd0acccd1c5ce3f8e54"
+		}
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "jorgeajimenezl-blog-d1",
+			"database_id": "dfdedd26-8b83-41d7-a113-ca46764facba"
+		}
+	],
+	"vars": {
+		"ORIGIN_ALLOWLIST": "https://jorgeajimenezl.github.io,https://jorgeajimenezl.me",
 	}
 	/**
 	 * Smart Placement
