@@ -107,7 +107,7 @@ app.post("/comments", async (c) => {
 
   const html = await mdToSafeHtml(md);
 
-  const created = Math.floor(Date.now() / 1000);
+  const created = Date.now();
   const ipHash = await sha256Hex(ipAddress);
 
   await c.env.DB.prepare(

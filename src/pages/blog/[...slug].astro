@@ -5,7 +5,8 @@ import Container from "@components/Container.astro";
 import FormattedDate from "@components/FormattedDate.astro";
 import { readingTime } from "@lib/utils";
 import BackToPrev from "@components/BackToPrev.astro";
-import CommentsList from "@components/CommentsList.astro";
+import CommentsList from "@components/CommentsList";
+import CommentForm from "@components/CommentForm.astro";
 
 export async function getStaticPaths() {
   const posts = (await getCollection("blog"))
@@ -47,7 +48,8 @@ const { Content } = await post.render();
       <Content />
     </article>
     <div class="animate">
-      <CommentsList postSlug={post.slug} />
+      <CommentsList client:load postSlug={post.slug} />
+      <CommentForm />
     </div>
   </Container>
 </PageLayout>
