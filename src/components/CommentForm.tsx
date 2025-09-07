@@ -101,7 +101,7 @@ export default function CommentForm(props: Props) {
           return;
         }
         const s = document.createElement("script");
-        s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+        s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
         s.async = true;
         s.defer = true;
         s.onload = () => resolve();
