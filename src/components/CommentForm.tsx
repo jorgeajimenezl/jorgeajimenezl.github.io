@@ -8,6 +8,9 @@ type Tab = "write" | "preview";
 
 interface Props {
   postSlug?: string;
+  parentId?: number | string;
+  compact?: boolean;
+  onSubmitted?: () => void;
 }
 
 interface PreviewResponse {
@@ -32,6 +35,8 @@ export default function CommentForm(props: Props) {
   const [ok, setOk] = useState(false);
 
   const SITE_KEY = import.meta.env?.PUBLIC_TURNSTILE_SITE_KEY || "";
+  const TURNSTILE_BYPASS = (import.meta.env?.PUBLIC_TURNSTILE_BYPASS || "").toLowerCase().trim();
+  const BYPASS = TURNSTILE_BYPASS === "1" || TURNSTILE_BYPASS === "true" || TURNSTILE_BYPASS === "yes" || TURNSTILE_BYPASS === "on";
   const turnstileRef = useRef<HTMLDivElement | null>(null);
   const turnstileTokenRef = useRef<string>("");
 
@@ -91,7 +96,7 @@ export default function CommentForm(props: Props) {
 
   // Load and render Cloudflare Turnstile, if configured
   useEffect(() => {
-    if (!SITE_KEY) return;
+    if (!SITE_KEY || BYPASS) return;
     function ensureScript(): Promise<void> {
       return new Promise((resolve) => {
         if ((window as any).turnstile) return resolve();
@@ -154,7 +159,7 @@ export default function CommentForm(props: Props) {
       setError("Please write a comment.");
       return;
     }
-    if (SITE_KEY && !turnstileTokenRef.current) {
+    if (SITE_KEY && !turnstileTokenRef.current && !BYPASS) {
       setError("Please complete the captcha.");
       return;
     }
@@ -167,6 +172,7 @@ export default function CommentForm(props: Props) {
           slug,
           author: name,
           body,
+          parentId: props.parentId ?? null,
           turnstileToken: turnstileTokenRef.current || "",
         }),
       });
@@ -183,6 +189,7 @@ export default function CommentForm(props: Props) {
       } catch {
         // ignore
       }
+      if (props.onSubmitted) props.onSubmitted();
     } catch (err) {
       setError((err as Error).message || "Failed to post comment");
     } finally {
@@ -190,9 +197,14 @@ export default function CommentForm(props: Props) {
     }
   }
 
+  const isReply = props.parentId !== undefined && props.parentId !== null;
+  const compact = Boolean(props.compact);
+
   return (
     <div>
-      <h3 class="mt-8 text-base font-semibold text-black dark:text-white">Leave a comment</h3>
+      {!compact && (
+        <h3 class="mt-8 text-base font-semibold text-black dark:text-white">{isReply ? "Reply" : "Leave a comment"}</h3>
+      )}
       <form class="mt-3 space-y-3" onSubmit={handleSubmit}>
         <div>
           <label for="author" class="sr-only">Your name</label>
@@ -240,7 +252,7 @@ export default function CommentForm(props: Props) {
               id="comment"
               name="comment"
               rows={6}
-              placeholder="Write your comment…"
+              placeholder={isReply ? "Write your reply…" : "Write your comment…"}
               value={text}
               onInput={(e) => setText((e.currentTarget as HTMLTextAreaElement).value)}
               class="w-full resize-y rounded-md border border-black/10 dark:border-white/10 bg-white/70 dark:bg-stone-900/50 p-3 text-sm text-black dark:text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-black/20 dark:focus:ring-white/30"
@@ -255,23 +267,27 @@ export default function CommentForm(props: Props) {
           />
         )}
 
-        {SITE_KEY ? (
+        {SITE_KEY && !BYPASS ? (
           <div class="flex items-center">
             <div ref={turnstileRef} />
           </div>
         ) : (
-          <p class="text-xs text-black/50 dark:text-white/50">
-            Note: Captcha not configured. Set PUBLIC_TURNSTILE_SITE_KEY to enable submissions.
-          </p>
+          !compact && (
+            <p class="text-xs text-black/50 dark:text-white/50">
+              {BYPASS 
+                ? "Captcha bypass active (local/dev)."
+                : "Note: Captcha not configured. Set PUBLIC_TURNSTILE_SITE_KEY to enable submissions."}
+            </p>
+          )
         )}
 
         <div class="flex items-center gap-3">
           <button
             type="submit"
-            disabled={submitting || !author.trim() || !text.trim() || (Boolean(SITE_KEY) && !turnstileTokenRef.current)}
-            class={`inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium ${submitting || !author.trim() || !text.trim() || (Boolean(SITE_KEY) && !turnstileTokenRef.current) ? "bg-black/80 text-white opacity-60 dark:bg-white/20 cursor-not-allowed" : "bg-black text-white dark:bg-white dark:text-black"}`}
+            disabled={submitting || !author.trim() || !text.trim() || ((Boolean(SITE_KEY) && !BYPASS) && !turnstileTokenRef.current)}
+            class={`inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium ${submitting || !author.trim() || !text.trim() || ((Boolean(SITE_KEY) && !BYPASS) && !turnstileTokenRef.current) ? "bg-black/80 text-white opacity-60 dark:bg-white/20 cursor-not-allowed" : "bg-black text-white dark:bg-white dark:text-black"}`}
           >
-            {submitting ? "Posting…" : "Post comment"}
+            {submitting ? (isReply ? "Replying…" : "Posting…") : (isReply ? "Reply" : "Post comment")}
           </button>
           <span class="text-xs text-black/50 dark:text-white/50">Don't share personal information.</span>
         </div>
@@ -279,7 +295,7 @@ export default function CommentForm(props: Props) {
           <p class="text-sm text-red-600 dark:text-red-400">{error}</p>
         )}
         {ok && !error && (
-          <p class="text-sm text-green-700 dark:text-green-400">Thanks! Your comment was posted.</p>
+          <p class="text-sm text-green-700 dark:text-green-400">Thanks! {isReply ? "Your reply" : "Your comment"} was posted.</p>
         )}
       </form>
     </div>

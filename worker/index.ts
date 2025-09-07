@@ -9,6 +9,7 @@ type Env = {
   KV: KVNamespace
   TURNSTILE_SECRET: string
   ORIGIN_ALLOWLIST?: string
+  TURNSTILE_BYPASS?: string
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -43,6 +44,11 @@ async function verifyTurnstile(secret: string, token: string, ip?: string) {
   return Boolean(data.success);
 }
 
+function isTurnstileBypassed(env: Env): boolean {
+  const v = (env.TURNSTILE_BYPASS || "").toLowerCase().trim();
+  return v === "1" || v === "true" || v === "yes" || v === "on";
+}
+
 app.post("/preview", async (c) => {
   const ipAddress = getClientIp(c.req.raw);
   const rateLimits = await limitPreview(c.env.KV, ipAddress);
@@ -69,7 +75,7 @@ app.get("/comments", async (c) => {
   const offset = (page - 1) * limit;
 
   const stmt = c.env.DB
-    .prepare("SELECT id, author, body_html AS html, created_at FROM comments WHERE slug = ? ORDER BY created_at DESC LIMIT ? OFFSET ?")
+    .prepare("SELECT id, author, body_html AS html, created_at, parent_id FROM comments WHERE slug = ? ORDER BY created_at DESC LIMIT ? OFFSET ?")
     .bind(slug, limit, offset);
 
   const { results } = await stmt.all();
@@ -84,9 +90,11 @@ app.post("/comments", async (c) => {
   const slug = String(json.slug ?? "");
   const author = String(json.author ?? "");
   const body = String(json.body ?? "");
+  const parentIdRaw = json.parentId;
   const turnstileToken = String(json.turnstileToken ?? "");
 
-  if (!slug || !author || !body || !turnstileToken) {
+  const bypass = isTurnstileBypassed(c.env);
+  if (!slug || !author || !body || (!bypass && !turnstileToken)) {
     return c.json({ error: "missing fields" }, 400);
   }
 
@@ -98,7 +106,7 @@ app.post("/comments", async (c) => {
     );
   }
 
-  const isTurnstileVerified = await verifyTurnstile(c.env.TURNSTILE_SECRET, turnstileToken, ipAddress);
+  const isTurnstileVerified = bypass || await verifyTurnstile(c.env.TURNSTILE_SECRET, turnstileToken, ipAddress);
   if (!isTurnstileVerified) 
     return c.json({ error: "turnstile failed" }, 403);
 
@@ -110,9 +118,26 @@ app.post("/comments", async (c) => {
   const created = Date.now();
   const ipHash = await sha256Hex(ipAddress);
 
+  // Validate optional parentId
+  let parentId: number | null = null;
+  if (parentIdRaw !== undefined && parentIdRaw !== null && String(parentIdRaw).trim() !== "") {
+    const parsed = parseInt(String(parentIdRaw), 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return c.json({ error: "invalid parentId" }, 400);
+    }
+    // Ensure parent exists and belongs to same slug
+    const { results: parentRes } = await c.env.DB.prepare(
+      "SELECT id FROM comments WHERE id = ? AND slug = ? LIMIT 1"
+    ).bind(parsed, slug).all();
+    if (!parentRes || parentRes.length === 0) {
+      return c.json({ error: "parent comment not found" }, 404);
+    }
+    parentId = parsed;
+  }
+
   await c.env.DB.prepare(
-    "INSERT INTO comments (slug, author, body, body_html, created_at, ip_hash, ua) VALUES (?, ?, ?, ?, ?, ?, ?)"
-  ).bind(slug, safeAuthor, md, html, created, ipHash, ua.slice(0, 255)).run();
+    "INSERT INTO comments (slug, author, body, body_html, created_at, ip_hash, ua, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+  ).bind(slug, safeAuthor, md, html, created, ipHash, ua.slice(0, 255), parentId).run();
 
   return c.json({ ok: true });
 });
