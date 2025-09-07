@@ -14,6 +14,13 @@ jobs:
     name: Deploy
     steps:
       - uses: actions/checkout@v4
+      - name: Apply D1 migrations
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.34.0"
+          command: d1 migrations apply jorgeajimenezl-blog-d1 --remote
       - name: Deploy
         uses: cloudflare/wrangler-action@v3
         with:
