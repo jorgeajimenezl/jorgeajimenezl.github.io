@@ -17,7 +17,7 @@ export default function Comment({ id, author, createdAt, html }: CommentProps) {
   return (
     <li class="rounded-lg border border-black/10 dark:border-white/10 p-4" id={id ? String(id) : undefined}>
       <div class="flex items-center gap-2 mb-2">
-        <span class="font-medium text-black dark:text-white">{author}</span>
+        <span class="font-medium text-sm text-black dark:text-white">{author}</span>
         <span class="text-black/40 dark:text-white/40">•</span>
         <span class="text-sm text-black/60 dark:text-white/60">
           <time dateTime={iso}>{label}</time>
