@@ -23,7 +23,7 @@ export default function Comment({ id, author, createdAt, html }: CommentProps) {
           <time dateTime={iso}>{label}</time>
         </span>
       </div>
-      <div class="prose prose-sm dark:prose-invert m-0" dangerouslySetInnerHTML={{ __html: html }} />
+      <div class="panel-preview prose prose-sm dark:prose-invert m-0" dangerouslySetInnerHTML={{ __html: html }} />
     </li>
   );
 }
