@@ -6,6 +6,6 @@ import tailwind from "@astrojs/tailwind";
 import preact from "@astrojs/preact";
 
 export default defineConfig({
-  site: "https://jorgeajimenezl.me",
+  site: "https://jorgeajimenezl.dev",
   integrations: [mdx(), sitemap(), tailwind(), preact()],
 });
