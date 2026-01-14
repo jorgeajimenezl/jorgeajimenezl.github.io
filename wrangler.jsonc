@@ -25,7 +25,7 @@
 		}
 	],
 	"vars": {
-		"ORIGIN_ALLOWLIST": "https://jorgeajimenezl.github.io,https://jorgeajimenezl.me,http://localhost:4321",
+		"ORIGIN_ALLOWLIST": "https://jorgeajimenezl.github.io,https://jorgeajimenezl.dev,http://localhost:4321",
 		// Set to "true" locally to bypass Turnstile in the Worker
 		// "TURNSTILE_BYPASS": "true",
 	}
